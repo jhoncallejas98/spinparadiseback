@@ -1,0 +1,23 @@
+{
+  "name": "back",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jhoncallejas98/spinparadiseback.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jhoncallejas98/spinparadiseback/issues"
+  },
+  "homepage": "https://github.com/jhoncallejas98/spinparadiseback#readme",
+  "description": "",
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}
