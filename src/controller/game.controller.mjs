@@ -110,33 +110,81 @@ export const spinGame = async (req, res) => {
         game.finishedAt = new Date();
         await game.save();
 
-        const bets = await betSchemas.find({ game: game._id }).lean();
+        // Procesar todas las apuestas del juego
+        const bets = await betSchemas.find({ game: game._id }).populate('user').lean();
+        const results = [];
+
         for (const bet of bets) {
             let totalPayout = 0;
             let totalStake = 0;
+            let betDetails = [];
+
             for (const item of bet.bets) {
                 totalStake += item.amount;
+                let itemPayout = 0;
+                let won = false;
+
                 if (item.type === 'numero') {
                     if (Number(item.value) === winningNumber) {
-                        totalPayout += item.amount * 36;
+                        itemPayout = item.amount * 36;
+                        won = true;
                     }
                 } else if (item.type === 'color') {
                     if (String(item.value).toLowerCase() === winningColor) {
-                        totalPayout += item.amount * 2;
+                        itemPayout = item.amount * 2;
+                        won = true;
                     }
                 }
+
+                totalPayout += itemPayout;
+                betDetails.push({
+                    type: item.type,
+                    value: item.value,
+                    amount: item.amount,
+                    won: won,
+                    payout: itemPayout
+                });
             }
 
             const resultStatus = totalPayout > 0 ? 'ganada' : 'perdida';
-            await betSchemas.updateOne({ _id: bet._id }, { $set: { result: resultStatus, payout: totalPayout } });
+            
+            // Actualizar la apuesta
+            await betSchemas.updateOne(
+                { _id: bet._id }, 
+                { 
+                    $set: { 
+                        result: resultStatus, 
+                        payout: totalPayout 
+                    } 
+                }
+            );
 
+            // Actualizar saldo del usuario
             if (totalPayout > 0) {
-                await userSchemas.updateOne({ _id: bet.user }, { $inc: { balance: totalPayout } });
+                await userSchemas.updateOne(
+                    { _id: bet.user._id }, 
+                    { $inc: { balance: totalPayout } }
+                );
             }
+
+            results.push({
+                betId: bet._id,
+                userId: bet.user._id,
+                username: bet.user.username,
+                totalStake,
+                totalPayout,
+                result: resultStatus,
+                betDetails
+            });
         }
 
-        return res.json({ game });
+        return res.json({ 
+            game,
+            results,
+            message: `Juego #${gameNumber} finalizado. Número ganador: ${winningNumber} (${winningColor})`
+        });
     } catch (error) {
+        console.error('Error spinning game:', error);
         return res.status(500).json({ msg: 'Error al girar juego' });
     }
 };
@@ -153,5 +201,50 @@ export const getGameBets = async (req, res) => {
         return res.json(bets);
     } catch (error) {
         return res.status(500).json({ msg: 'Error al listar apuestas del juego' });
+    }
+};
+
+export const getGameResults = async (req, res) => {
+    const { gameNumber } = req.params;
+    try {
+        const game = await gameSchemas.findOne({ gameNumber: Number(gameNumber) });
+        if (!game) {
+            return res.status(404).json({ msg: 'Juego no encontrado' });
+        }
+
+        const bets = await betSchemas.find({ game: game._id })
+            .populate('user', 'username')
+            .sort({ createdAt: -1 });
+
+        const results = {
+            game: {
+                gameNumber: game.gameNumber,
+                status: game.status,
+                winningNumber: game.winningNumber,
+                winningColor: game.winningColor,
+                createdAt: game.createdAt,
+                closedAt: game.closedAt,
+                finishedAt: game.finishedAt
+            },
+            bets: bets.map(bet => ({
+                id: bet._id,
+                user: bet.user.username,
+                bets: bet.bets,
+                result: bet.result,
+                payout: bet.payout,
+                createdAt: bet.createdAt
+            })),
+            summary: {
+                totalBets: bets.length,
+                totalWinners: bets.filter(b => b.result === 'ganada').length,
+                totalLosers: bets.filter(b => b.result === 'perdida').length,
+                totalPayout: bets.reduce((sum, b) => sum + b.payout, 0)
+            }
+        };
+
+        return res.json(results);
+    } catch (error) {
+        console.error('Error getting game results:', error);
+        return res.status(500).json({ msg: 'Error al obtener resultados del juego' });
     }
 };

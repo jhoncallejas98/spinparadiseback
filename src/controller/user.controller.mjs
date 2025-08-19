@@ -248,3 +248,19 @@ export const getMyHistory = async (req, res) => {
         return res.status(500).json({ msg: 'Error al obtener historial' });
     }
 };
+
+// Obtener saldo actual del usuario
+export const getMyBalance = async (req, res) => {
+    try {
+        const user = await userSchemas.findById(req.authUser.id).select('balance username');
+        if (!user) {
+            return res.status(404).json({ msg: 'Usuario no encontrado' });
+        }
+        return res.json({
+            balance: user.balance,
+            username: user.username
+        });
+    } catch (error) {
+        return res.status(500).json({ msg: 'Error al obtener saldo' });
+    }
+};

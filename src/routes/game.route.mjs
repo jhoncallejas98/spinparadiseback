@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { listGames, openGame, closeGame, spinGame, getGameBets } from "../controller/game.controller.mjs";
+import { listGames, openGame, closeGame, spinGame, getGameBets, getGameResults } from "../controller/game.controller.mjs";
 import { authUser, requireAdmin } from "../middlewares/auth-user-middlewares.mjs";
 
 const router = Router();
@@ -10,6 +10,7 @@ router.get('/api/games', authUser, listGames);
 router.post('/api/games/open', authUser, openGame);
 router.post('/api/games/:gameNumber/close', authUser, closeGame);
 router.post('/api/games/:gameNumber/spin', authUser, spinGame);
+router.get('/api/games/:gameNumber/results', authUser, getGameResults);
 
 // Admin: por si necesitas listados o acciones exclusivas
 router.get('/api/admin/games', authUser, requireAdmin, listGames);

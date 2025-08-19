@@ -1,4 +1,4 @@
-import { createUser, getAllUsers,   updateUsersById, removeUsersById, loginUser, setUserRole, listUsersAdmin, adjustUserBalance, getMyDeposits, getMyHistory } from "../controller/user.controller.mjs";
+import { createUser, getAllUsers, updateUsersById, removeUsersById, loginUser, setUserRole, listUsersAdmin, adjustUserBalance, getMyDeposits, getMyHistory, getMyBalance } from "../controller/user.controller.mjs";
 import express from "express";
 import { authUser, requireAdmin } from "../middlewares/auth-user-middlewares.mjs";
 
@@ -22,5 +22,6 @@ router.post('/api/admin/users/:id/balance/adjust', authUser, requireAdmin, adjus
 // Historial del usuario autenticado
 router.get('/api/me/deposits', authUser, getMyDeposits);
 router.get('/api/me/history', authUser, getMyHistory);
+router.get('/api/me/balance', authUser, getMyBalance);
 
 export default router;
